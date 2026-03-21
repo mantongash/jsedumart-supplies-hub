@@ -11,6 +11,7 @@ const Shop = () => {
   const [selectedCategory, setSelectedCategory] = useState(categoryParam || "all");
   const [sortBy, setSortBy] = useState("featured");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const { data: products = [] } = useProducts();
 
   const filtered = useMemo(() => {
     let result = products;
