@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import ProductCard from "@/components/products/ProductCard";
-import { products, categories } from "@/data/products";
+import { categories } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 
 const Shop = () => {
   const [searchParams] = useSearchParams();
