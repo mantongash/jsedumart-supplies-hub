@@ -76,7 +76,7 @@ const Index = () => {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
             className="text-lg md:text-xl text-primary-foreground/80 mb-10 max-w-2xl mx-auto"
           >
-            Quality books, stationery & office supplies delivered across Nairobi at unbeatable prices.
+            Quality books, novels, stationery & office equipment delivered across Nairobi at unbeatable prices.
           </motion.p>
 
           <motion.div
