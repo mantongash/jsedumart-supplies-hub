@@ -46,7 +46,7 @@ const About = () => (
       {/* Google Maps */}
       <div className="bg-card rounded-xl shadow-card overflow-hidden mb-16">
         <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.8176!2d36.8219!3d-1.2864!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f10d22f2ef7c7%3A0x4c3ef5d8e8f8a8a8!2sJS+Edumart+Books+and+Stationery+Shop!5e0!3m2!1sen!2ske!4v1"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.85!2d36.7468!3d-1.2780!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f10d22f2ef7c7%3A0x4c3ef5d8e8f8a8a8!2sKabiria+Stage!5e0!3m2!1sen!2ske!4v1"
           width="100%"
           height="300"
           style={{ border: 0 }}
