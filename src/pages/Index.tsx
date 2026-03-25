@@ -201,7 +201,7 @@ const Index = () => {
             to="/shop"
             className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-8 py-4 rounded-xl font-display font-bold text-lg hover:-translate-y-0.5 transition-all"
           >
-            <i className="fa-solid fa-bag-shopping" /> Equip Your Studies
+            <i className="fa-solid fa-bag-shopping" /> Shop Now
           </Link>
         </div>
       </section>

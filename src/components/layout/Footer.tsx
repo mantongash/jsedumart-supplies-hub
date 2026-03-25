@@ -50,7 +50,7 @@ const Footer = () => (
         <div>
           <h4 className="font-display text-sm font-semibold mb-4 uppercase tracking-wider opacity-70">Contact Info</h4>
           <div className="flex flex-col gap-3 text-sm opacity-80">
-            <p><i className="fa-solid fa-location-dot mr-2 text-accent" />JS Edumart, Nairobi CBD</p>
+            <p><i className="fa-solid fa-location-dot mr-2 text-accent" />JSEdumart, Kabiria Stage, Nairobi</p>
             <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="hover:opacity-100 transition-opacity">
               <i className="fa-brands fa-whatsapp mr-2 text-accent" />0748 332 788
             </a>

@@ -78,7 +78,7 @@ const Contact = () => {
                   <p className="text-xs text-muted-foreground">Nairobi CBD, Kenya</p>
                 </div>
                 <a
-                  href="https://share.google/c0cTQ96AfCblQRyxx"
+                  href="https://share.google/qv62A7CY3yaXoUTeo"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"

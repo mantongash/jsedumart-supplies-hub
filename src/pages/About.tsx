@@ -23,7 +23,7 @@ const About = () => (
             JSEdumart was born from a simple belief: every student, teacher, and office deserves access to quality supplies at prices that don't break the bank. Based at Kabiria Stage in Nairobi, we've grown from a small stationery shop to one of Kenya's most trusted suppliers of books, office equipment, novels, and stationery.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            We work directly with manufacturers and publishers to bring you the best prices on everything from exercise books and pens to textbooks and art supplies.
+            We work directly with manufacturers and publishers to bring you the best prices on everything from office equipment and novels to textbooks, stationery, and art supplies.
           </p>
         </motion.div>
         <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
