@@ -120,7 +120,7 @@ const Index = () => {
         <div className="container mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { icon: "fa-truck-fast", title: "Fast Delivery", desc: "Nairobi CBD & beyond" },
+              { icon: "fa-truck-fast", title: "Fast Delivery", desc: "Kabiria & all Nairobi" },
               { icon: "fa-shield-halved", title: "Trusted Quality", desc: "Genuine products" },
               { icon: "fa-tag", title: "Best Prices", desc: "Student-friendly" },
               { icon: "fa-mobile-screen", title: "M-Pesa", desc: "Easy payments" },
