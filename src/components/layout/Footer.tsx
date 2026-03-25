@@ -14,7 +14,7 @@ const Footer = () => (
             </div>
             <span className="font-display text-lg font-bold">JSEdumart</span>
           </div>
-          <p className="text-sm opacity-80 mb-4">Your trusted source for quality books, stationery & office supplies in Nairobi.</p>
+          <p className="text-sm opacity-80 mb-4">Your trusted source for quality books, novels, stationery & office equipment in Nairobi.</p>
           <div className="flex gap-3">
             <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg bg-primary-foreground/10 flex items-center justify-center hover:bg-accent transition-colors" aria-label="Facebook">
               <i className="fa-brands fa-facebook-f text-sm" />
