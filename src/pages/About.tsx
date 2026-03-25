@@ -58,7 +58,7 @@ const About = () => (
         <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-display font-bold text-lg">Visit Our Shop</h3>
-            <p className="text-sm text-muted-foreground">JS Edumart Books & Stationery, Nairobi CBD, Kenya</p>
+            <p className="text-sm text-muted-foreground">JSEdumart Books & Stationery, Kabiria Stage, Nairobi</p>
             <p className="text-sm text-muted-foreground mt-1"><i className="fa-solid fa-clock mr-1 text-accent" />Mon-Fri: 8AM - 7PM | Sat: 9AM - 5PM</p>
           </div>
           <a
