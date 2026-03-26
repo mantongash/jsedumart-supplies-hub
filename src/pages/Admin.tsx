@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useDbProducts, type DbProduct } from "@/hooks/useProducts";
+import { useOrders, useUpdateOrderStatus, type DbOrder } from "@/hooks/useOrders";
 import AdminLogin from "@/components/admin/AdminLogin";
 import AdminSalesChart from "@/components/admin/AdminSalesChart";
 import AdminProductTable from "@/components/admin/AdminProductTable";
 import AdminProductForm from "@/components/admin/AdminProductForm";
+import { toast } from "sonner";
 
 const tabs = [
   { id: "overview", label: "Dashboard", icon: "fa-chart-line" },
@@ -14,11 +16,13 @@ const tabs = [
   { id: "settings", label: "Settings", icon: "fa-gear" },
 ];
 
-const mockOrders = [
-  { id: "JSE-ABC123", customer: "John Kamau", total: 1280, status: "Processing", date: "2024-01-15" },
-  { id: "JSE-DEF456", customer: "Mary Wanjiku", total: 750, status: "Shipped", date: "2024-01-14" },
-  { id: "JSE-GHI789", customer: "Peter Odhiambo", total: 430, status: "Delivered", date: "2024-01-13" },
-];
+const statusColors: Record<string, string> = {
+  pending: "bg-warning/10 text-warning",
+  processing: "bg-accent/10 text-accent",
+  shipped: "bg-info/10 text-info",
+  delivered: "bg-success/10 text-success",
+  cancelled: "bg-destructive/10 text-destructive",
+};
 
 const Admin = () => {
   const { user, profile, isAdmin, isLoading, logout } = useAuth();
@@ -28,8 +32,9 @@ const Admin = () => {
   const [editingProduct, setEditingProduct] = useState<DbProduct | null>(null);
 
   const { data: products = [], isLoading: productsLoading } = useDbProducts();
+  const { data: orders = [], isLoading: ordersLoading } = useOrders();
+  const updateStatus = useUpdateOrderStatus();
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-muted">
@@ -38,24 +43,41 @@ const Admin = () => {
     );
   }
 
-  // Not authenticated or not admin → show admin login
   if (!user || !isAdmin) {
     return <AdminLogin />;
   }
 
   const displayName = profile?.display_name || user.email?.split("@")[0] || "Admin";
-
-  const openAdd = () => {
-    setEditingProduct(null);
-    setShowForm(true);
-  };
-
-  const openEdit = (p: DbProduct) => {
-    setEditingProduct(p);
-    setShowForm(true);
-  };
-
   const lowStockCount = products.filter((p) => !p.in_stock).length;
+
+  // Real stats
+  const totalRevenue = orders.filter(o => o.status !== "cancelled").reduce((s, o) => s + Number(o.total), 0);
+  const totalOrders = orders.length;
+  const deliveredOrders = orders.filter(o => o.status === "delivered").length;
+
+  // Unique customers from orders
+  const uniqueCustomers = new Map<string, { name: string; email: string | null; phone: string; orderCount: number }>();
+  orders.forEach((o) => {
+    const key = o.customer_phone || o.customer_email || o.customer_name;
+    const existing = uniqueCustomers.get(key);
+    if (existing) {
+      existing.orderCount += 1;
+    } else {
+      uniqueCustomers.set(key, { name: o.customer_name, email: o.customer_email, phone: o.customer_phone, orderCount: 1 });
+    }
+  });
+
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      await updateStatus.mutateAsync({ id: orderId, status: newStatus });
+      toast.success(`Order status updated to ${newStatus}`);
+    } catch {
+      toast.error("Failed to update order status");
+    }
+  };
+
+  const openAdd = () => { setEditingProduct(null); setShowForm(true); };
+  const openEdit = (p: DbProduct) => { setEditingProduct(p); setShowForm(true); };
 
   return (
     <div className="flex h-screen bg-muted">
@@ -112,8 +134,8 @@ const Admin = () => {
             <div className="space-y-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: "Total Sales", value: "KSh 125,430", icon: "fa-coins", color: "text-success", bg: "bg-success/10" },
-                  { label: "Total Orders", value: "342", icon: "fa-shopping-bag", color: "text-accent", bg: "bg-accent/10" },
+                  { label: "Total Revenue", value: `KSh ${totalRevenue.toLocaleString()}`, icon: "fa-coins", color: "text-success", bg: "bg-success/10" },
+                  { label: "Total Orders", value: totalOrders.toString(), icon: "fa-shopping-bag", color: "text-accent", bg: "bg-accent/10" },
                   { label: "Total Products", value: products.length.toString(), icon: "fa-box", color: "text-warning", bg: "bg-warning/10" },
                   { label: "Out of Stock", value: lowStockCount.toString(), icon: "fa-triangle-exclamation", color: "text-destructive", bg: "bg-destructive/10" },
                 ].map((s) => (
@@ -129,43 +151,46 @@ const Admin = () => {
                 ))}
               </div>
 
-              <AdminSalesChart />
+              <AdminSalesChart orders={orders} />
 
+              {/* Recent orders */}
               <div className="bg-card rounded-xl shadow-card p-6">
                 <h3 className="font-display font-bold mb-4">
                   <i className="fa-solid fa-clock-rotate-left mr-2 text-accent" />
                   Recent Orders
                 </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Order ID</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Customer</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Total</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Status</th>
-                        <th className="text-left py-3 px-2 text-muted-foreground font-medium">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mockOrders.map((order) => (
-                        <tr key={order.id} className="border-b border-border/50 hover:bg-muted/50">
-                          <td className="py-3 px-2 font-mono text-xs">{order.id}</td>
-                          <td className="py-3 px-2">{order.customer}</td>
-                          <td className="py-3 px-2 font-semibold">KSh {order.total.toLocaleString()}</td>
-                          <td className="py-3 px-2">
-                            <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                              order.status === "Delivered" ? "bg-success/10 text-success"
-                              : order.status === "Shipped" ? "bg-accent/10 text-accent"
-                              : "bg-warning/10 text-warning"
-                            }`}>{order.status}</span>
-                          </td>
-                          <td className="py-3 px-2 text-muted-foreground">{order.date}</td>
+                {orders.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">No orders yet — they'll appear here in real-time</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 px-2 text-muted-foreground font-medium">Order ID</th>
+                          <th className="text-left py-3 px-2 text-muted-foreground font-medium">Customer</th>
+                          <th className="text-left py-3 px-2 text-muted-foreground font-medium">Total</th>
+                          <th className="text-left py-3 px-2 text-muted-foreground font-medium">Status</th>
+                          <th className="text-left py-3 px-2 text-muted-foreground font-medium">Date</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {orders.slice(0, 5).map((order) => (
+                          <tr key={order.id} className="border-b border-border/50 hover:bg-muted/50">
+                            <td className="py-3 px-2 font-mono text-xs">{order.order_ref}</td>
+                            <td className="py-3 px-2">{order.customer_name}</td>
+                            <td className="py-3 px-2 font-semibold">KSh {Number(order.total).toLocaleString()}</td>
+                            <td className="py-3 px-2">
+                              <span className={`px-2 py-1 rounded-lg text-xs font-semibold capitalize ${statusColors[order.status] || "bg-muted text-muted-foreground"}`}>
+                                {order.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-2 text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -174,25 +199,14 @@ const Admin = () => {
           {activeTab === "products" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-muted-foreground">
-                  {products.length} products · {lowStockCount} out of stock
-                </p>
+                <p className="text-muted-foreground">{products.length} products · {lowStockCount} out of stock</p>
                 <button onClick={openAdd} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
                   <i className="fa-solid fa-plus" /> Add Product
                 </button>
               </div>
-
-              {showForm && (
-                <AdminProductForm
-                  editing={editingProduct}
-                  onClose={() => setShowForm(false)}
-                />
-              )}
-
+              {showForm && <AdminProductForm editing={editingProduct} onClose={() => setShowForm(false)} />}
               {productsLoading ? (
-                <div className="flex justify-center py-12">
-                  <i className="fa-solid fa-spinner fa-spin text-2xl text-accent" />
-                </div>
+                <div className="flex justify-center py-12"><i className="fa-solid fa-spinner fa-spin text-2xl text-accent" /></div>
               ) : (
                 <AdminProductTable products={products} onEdit={openEdit} />
               )}
@@ -202,57 +216,82 @@ const Admin = () => {
           {/* ── ORDERS ── */}
           {activeTab === "orders" && (
             <div className="bg-card rounded-xl shadow-card p-6">
-              <h3 className="font-display font-bold mb-4">All Orders</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-2 font-medium">Order ID</th>
-                      <th className="text-left py-3 px-2 font-medium">Customer</th>
-                      <th className="text-left py-3 px-2 font-medium">Total</th>
-                      <th className="text-left py-3 px-2 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockOrders.map((order) => (
-                      <tr key={order.id} className="border-b border-border/50">
-                        <td className="py-3 px-2 font-mono text-xs">{order.id}</td>
-                        <td className="py-3 px-2">{order.customer}</td>
-                        <td className="py-3 px-2 font-semibold">KSh {order.total.toLocaleString()}</td>
-                        <td className="py-3 px-2">
-                          <select className="px-2 py-1 rounded border border-border text-xs bg-background">
-                            <option>Processing</option>
-                            <option>Shipped</option>
-                            <option>Delivered</option>
-                            <option>Cancelled</option>
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display font-bold">All Orders ({orders.length})</h3>
+                <div className="flex gap-2 text-xs">
+                  <span className="px-2 py-1 rounded bg-success/10 text-success">{deliveredOrders} delivered</span>
+                  <span className="px-2 py-1 rounded bg-warning/10 text-warning">{orders.filter(o => o.status === "pending").length} pending</span>
+                </div>
               </div>
+              {ordersLoading ? (
+                <div className="flex justify-center py-12"><i className="fa-solid fa-spinner fa-spin text-2xl text-accent" /></div>
+              ) : orders.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">No orders yet</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-3 px-2 font-medium">Order ID</th>
+                        <th className="text-left py-3 px-2 font-medium">Customer</th>
+                        <th className="text-left py-3 px-2 font-medium">Phone</th>
+                        <th className="text-left py-3 px-2 font-medium">Total</th>
+                        <th className="text-left py-3 px-2 font-medium">Payment</th>
+                        <th className="text-left py-3 px-2 font-medium">Status</th>
+                        <th className="text-left py-3 px-2 font-medium">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders.map((order) => (
+                        <tr key={order.id} className="border-b border-border/50 hover:bg-muted/50">
+                          <td className="py-3 px-2 font-mono text-xs">{order.order_ref}</td>
+                          <td className="py-3 px-2">{order.customer_name}</td>
+                          <td className="py-3 px-2 text-muted-foreground">{order.customer_phone}</td>
+                          <td className="py-3 px-2 font-semibold">KSh {Number(order.total).toLocaleString()}</td>
+                          <td className="py-3 px-2 capitalize">{order.payment_method}</td>
+                          <td className="py-3 px-2">
+                            <select
+                              value={order.status}
+                              onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                              className={`px-2 py-1 rounded-lg border border-border text-xs font-semibold bg-background capitalize`}
+                            >
+                              {["pending", "processing", "shipped", "delivered", "cancelled"].map((s) => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="py-3 px-2 text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
           {/* ── CUSTOMERS ── */}
           {activeTab === "customers" && (
             <div className="bg-card rounded-xl shadow-card p-6">
-              <h3 className="font-display font-bold mb-4">Customer List</h3>
-              <div className="space-y-3">
-                {["John Kamau", "Mary Wanjiku", "Peter Odhiambo"].map((name, i) => (
-                  <div key={name} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold">{name[0]}</div>
-                      <div>
-                        <p className="font-semibold text-sm">{name}</p>
-                        <p className="text-xs text-muted-foreground">{name.toLowerCase().replace(" ", ".")}@email.com</p>
+              <h3 className="font-display font-bold mb-4">Customers ({uniqueCustomers.size})</h3>
+              {uniqueCustomers.size === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">No customers yet — they'll appear as orders come in</p>
+              ) : (
+                <div className="space-y-3">
+                  {Array.from(uniqueCustomers.values()).map((c, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold">{c.name[0]}</div>
+                        <div>
+                          <p className="font-semibold text-sm">{c.name}</p>
+                          <p className="text-xs text-muted-foreground">{c.email || c.phone}</p>
+                        </div>
                       </div>
+                      <span className="text-sm text-muted-foreground">{c.orderCount} order{c.orderCount !== 1 ? "s" : ""}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">{i + 1} orders</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -261,7 +300,7 @@ const Admin = () => {
             <div className="max-w-2xl space-y-6">
               {[
                 { title: "Payment Methods", icon: "fa-credit-card", fields: [{ label: "M-Pesa Till Number", value: "123456" }, { label: "Accept Cash on Delivery", value: "Yes" }] },
-                { title: "Shipping", icon: "fa-truck", fields: [{ label: "Standard Delivery Fee", value: "KSh 150" }, { label: "Free Delivery Threshold", value: "KSh 5,000" }] },
+                { title: "Shipping", icon: "fa-truck", fields: [{ label: "Standard Delivery Fee", value: "KSh 150" }, { label: "Free Delivery Threshold", value: "KSh 2,000" }] },
                 { title: "Store Info", icon: "fa-store", fields: [{ label: "Currency", value: "KSh (Kenyan Shilling)" }, { label: "Tax Rate", value: "16% VAT" }] },
                 { title: "Contact", icon: "fa-phone", fields: [{ label: "WhatsApp", value: "0748 332 788" }, { label: "Email", value: "jsbookshop4@gmail.com" }] },
               ].map((section) => (
